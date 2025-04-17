@@ -13,8 +13,8 @@ interface HttpRequestAbility {
         request(url, HttpMethod.POST, body)
     }
 
-    default ResponseEntity<Map> httpDeleteRequest(String url) {
-        request(url, HttpMethod.DELETE, null)
+    default ResponseEntity<Map> httpPutRequest(String url, Map body = null) {
+        request(url, HttpMethod.PUT, body)
     }
 
     ResponseEntity<Map> request(String url, HttpMethod method, Map body)
