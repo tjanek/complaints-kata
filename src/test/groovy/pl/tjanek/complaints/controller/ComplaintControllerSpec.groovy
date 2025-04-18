@@ -3,10 +3,14 @@ package pl.tjanek.complaints.controller
 
 import org.springframework.http.HttpStatus
 import pl.tjanek.complaints.BaseIntegrationSpec
+import pl.tjanek.complaints.abilities.ChangeComplaintAbility
+import pl.tjanek.complaints.abilities.CreateComplaintAbility
+import pl.tjanek.complaints.abilities.GetComplaintsAbility
 import spock.lang.Stepwise
 
 @Stepwise
-class ComplaintControllerSpec extends BaseIntegrationSpec {
+class ComplaintControllerSpec extends BaseIntegrationSpec implements
+        CreateComplaintAbility, GetComplaintsAbility, ChangeComplaintAbility {
 
     def setup() {
         stubForIpApiResponse("127.0.0.1", "Poland")
@@ -22,7 +26,7 @@ class ComplaintControllerSpec extends BaseIntegrationSpec {
         ]
 
         when:
-        def response = httpPostRequest("/api/v1/complaints", request)
+        def response = createNewComplaint(request)
 
         then:
         response.statusCode == HttpStatus.CREATED
@@ -44,7 +48,7 @@ class ComplaintControllerSpec extends BaseIntegrationSpec {
         ]
 
         when:
-        def response = httpPostRequest("/api/v1/complaints", request)
+        def response = createNewComplaint(request)
 
         then:
         response.statusCode == HttpStatus.CREATED
@@ -56,20 +60,22 @@ class ComplaintControllerSpec extends BaseIntegrationSpec {
 
     def "should edit complaint content"() {
         given:
-        def getAllResponse = httpGetRequest("/api/v1/complaints")
-        def complaintId = getAllResponse.body.content[0].id
+        def getAllResponse = getComplaints()
+        def complaintId = getAllResponse.body.content[0].id as String
+
+        and:
         def request = [
                 content: "Updated content for the complaint"
         ]
 
         when:
-        def response = httpPutRequest("/api/v1/complaints/${complaintId}", request)
+        def response = changeComplaint(complaintId, request)
 
         then:
         response.statusCode == HttpStatus.OK
-        response.body.id == complaintId
+        response.body.id == complaintId as Integer
         response.body.content == "Updated content for the complaint"
-        response.body.submissionCount == 2 // Unchanged
+        response.body.submissionCount == 2
     }
 
     def "should get all complaints with pagination"() {
@@ -87,20 +93,20 @@ class ComplaintControllerSpec extends BaseIntegrationSpec {
 
     def "should get complaint by id"() {
         given:
-        def getAllResponse = httpGetRequest("/api/v1/complaints")
-        def complaintId = getAllResponse.body.content[0].id
+        def getAllResponse = getComplaints()
+        def complaintId = getAllResponse.body.content[0].id as String
 
         when:
-        def response = httpGetRequest("/api/v1/complaints/${complaintId}")
+        def response = getComplaint(complaintId)
 
         then:
         response.statusCode == HttpStatus.OK
-        response.body.id == complaintId
+        response.body.id == complaintId as Integer
     }
 
     def "should return 404 for non-existent complaint"() {
         when:
-        def response = httpGetRequest("/api/v1/complaints/999999")
+        def response = getComplaint("999999")
 
         then:
         response.statusCode == HttpStatus.NOT_FOUND
